@@ -455,11 +455,19 @@ function setPri(fbKey, level, btn) {
 // FIREBASE INIT
 // ============================================================
 let FBDB, PRI_REF;
+
+// Always render first, then try Firebase
+renderSpeakers();
+renderSponsors();
+document.getElementById('sync-label').textContent = 'Local mode';
+document.getElementById('sync-dot').style.background = '#ffaa00';
+
 try {
   const firebaseConfig = {
     authDomain: "FILL_IN.firebaseapp.com",
     databaseURL: "https://FILL_IN-default-rtdb.firebaseio.com"
   };
+  if (firebaseConfig.databaseURL.includes('FILL_IN')) throw new Error('Firebase not configured');
   firebase.initializeApp(firebaseConfig);
   FBDB = firebase.database();
   PRI_REF = FBDB.ref('teamz2026/priorities');
@@ -476,12 +484,8 @@ try {
     renderSponsors();
   });
 } catch(e) {
-  document.getElementById('sync-label').textContent = 'Local mode';
-  renderSpeakers();
-  renderSponsors();
+  // Firebase not configured — local mode is fine
 }
-
-if (!PRI_REF) { renderSpeakers(); renderSponsors(); }
 </script>
 </body>
 </html>
