@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAMZ WEB3/AI SUMMIT 2026 — R Inc. 営業リスト</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --accent: #00C9A7;
+    --accent2: #6C63FF;
+    --dark: #111;
+    --card: #1e1e1e;
+    --card2: #252525;
+    --text: #f0f0f0;
+    --muted: #777;
+    --border: #333;
+    --red: #ff4444;
+    --yellow: #ffaa00;
+    --green: #44bb44;
+    --blue: #4499ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; min-height: 100vh; }
+
+  header { background: #0a0a0a; padding: 14px 20px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  header h1 { color: var(--accent); font-size: 16px; font-weight: 700; }
+  header .meta { font-size: 11px; color: var(--muted); }
+
+  .tabs { display: flex; background: #0d0d0d; border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 53px; z-index: 99; }
+  .tab { padding: 12px 20px; cursor: pointer; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .filters { padding: 12px 20px; background: #0d0d0d; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border); }
+  .filter-btn { padding: 5px 14px; border: 1px solid #444; border-radius: 20px; background: none; color: var(--muted); cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,201,167,0.08); }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .legend { padding: 8px 20px; background: #0a0a0a; display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; border-bottom: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .content { padding: 16px 20px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .stats { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  .stats span { color: var(--accent); font-weight: 600; }
+
+  .speakers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .speaker-card { background: var(--card); border-radius: 12px; padding: 14px; border: 1px solid var(--border); border-left: 4px solid var(--border); transition: border-color 0.2s, transform 0.1s; position: relative; }
+  .speaker-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .speaker-card.p-high { border-left-color: var(--red); }
+  .speaker-card.p-med  { border-left-color: var(--yellow); }
+  .speaker-card.p-low  { border-left-color: var(--green); }
+
+  .new-badge { position: absolute; top: 10px; right: 46px; background: var(--accent); color: #000; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; }
+
+  .speaker-top { display: flex; gap: 12px; margin-bottom: 10px; }
+  .speaker-initial { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .speaker-info { flex: 1; min-width: 0; }
+  .name-jp { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .name-en { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .speaker-company { font-size: 12px; color: var(--accent); font-weight: 500; }
+  .speaker-role { font-size: 11px; color: var(--muted); }
+  .speaker-cat { display: inline-block; font-size: 10px; padding: 1px 7px; background: #2a2a2a; border-radius: 10px; color: #aaa; margin-top: 3px; }
+  .speaker-desc { font-size: 12px; color: #ccc; line-height: 1.6; margin-bottom: 10px; }
+
+  .pitch-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ptag { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .ptag-jpyr   { background: rgba(68,153,255,0.15); color: #7ab8ff; border: 1px solid rgba(68,153,255,0.3); }
+  .ptag-izakaya { background: rgba(255,80,80,0.1); color: #ff8888; border: 1px solid rgba(255,80,80,0.25); }
+  .ptag-sto    { background: rgba(68,187,68,0.1); color: #88dd88; border: 1px solid rgba(68,187,68,0.25); }
+  .ptag-net    { background: rgba(120,120,120,0.1); color: #888; border: 1px solid rgba(120,120,120,0.2); }
+  .ptag-media  { background: rgba(180,80,220,0.1); color: #cc88ff; border: 1px solid rgba(180,80,220,0.25); }
+
+  .sponsor-tier-section { margin-bottom: 28px; }
+  .tier-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .tier-name { font-size: 16px; font-weight: 700; }
+  .tier-title { color: #FFD700; }
+  .tier-diamond { color: #b9f2ff; }
+  .tier-platinum { color: #C0C0C0; }
+  .tier-gold { color: #CD7F32; }
+  .tier-vc { color: var(--accent2); }
+  .tier-count { font-size: 12px; color: var(--muted); }
+
+  .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .sponsor-card { background: var(--card); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); border-left: 4px solid var(--border); transition: border-color 0.2s; position: relative; }
+  .sponsor-card:hover { border-color: var(--accent); }
+  .sponsor-card.s-new .sponsor-name::after { content: ' NEW'; color: var(--accent); font-size: 9px; font-weight: 700; vertical-align: middle; }
+  .sponsor-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .sponsor-name a { color: var(--text); text-decoration: none; }
+  .sponsor-name a:hover { color: var(--accent); }
+  .sponsor-cat { font-size: 11px; color: var(--accent); margin-bottom: 6px; }
+  .sponsor-desc { font-size: 11px; color: #bbb; line-height: 1.55; }
+  .sponsor-tags { margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+
+  .social-row { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #2a2a2a; flex-wrap: wrap; }
+  .slink { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 6px; text-decoration: none; transition: opacity 0.2s; white-space: nowrap; }
+  .slink:hover { opacity: 0.75; }
+  .slink-x { background: #000; color: #fff; border: 1px solid #444; }
+  .slink-web { background: #1a1a2e; color: #88aaff; border: 1px solid #2a2a55; }
+
+  .pri-picker { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; align-items: center; z-index: 2; }
+  .pri-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #333; cursor: pointer; background: transparent; transition: all 0.15s; padding: 0; flex-shrink: 0; }
+  .pri-dot:hover { transform: scale(1.3); }
+  .pd-high { border-color: rgba(255,68,68,0.45); }
+  .pd-high:hover, .pd-high.active { background: var(--red); border-color: var(--red); box-shadow: 0 0 6px rgba(255,68,68,0.55); }
+  .pd-med  { border-color: rgba(255,170,0,0.45); }
+  .pd-med:hover,  .pd-med.active  { background: var(--yellow); border-color: var(--yellow); box-shadow: 0 0 6px rgba(255,170,0,0.55); }
+  .pd-low  { border-color: rgba(68,187,68,0.45); }
+  .pd-low:hover,  .pd-low.active  { background: var(--green); border-color: var(--green); box-shadow: 0 0 6px rgba(68,187,68,0.55); }
+  .sponsor-card.up-high { border-left-color: var(--red) !important; }
+  .sponsor-card.up-med  { border-left-color: var(--yellow) !important; }
+  .sponsor-card.up-low  { border-left-color: var(--green) !important; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌐 TEAMZ WEB3/AI SUMMIT 2026 — R Inc. 営業リスト</h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="meta">Apr 7–8 @ 八芳園, Tokyo｜更新: 2026-04-07</div>
+    <div id="sync-status" style="font-size:11px;color:#555;display:flex;align-items:center;gap:5px">
+      <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span>
+      <span id="sync-label">接続中...</span>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('speakers')">スピーカー <span id="sp-count" style="font-size:11px;color:#555;"></span></div>
+  <div class="tab" onclick="switchTab('sponsors')">スポンサー <span id="so-count" style="font-size:11px;color:#555;"></span></div>
+</div>
+
+<div class="filters" id="speaker-filters">
+  <button class="filter-btn active" onclick="filterSpeakers('all', this)">全て</button>
+  <button class="filter-btn" onclick="filterSpeakers('jpyr', this)">💴 JPYR</button>
+  <button class="filter-btn" onclick="filterSpeakers('sto', this)">📈 STOトークン</button>
+  <button class="filter-btn" onclick="filterSpeakers('izakaya', this)">🏮 IZAKAYA</button>
+  <button class="filter-btn" onclick="filterSpeakers('net', this)">🤝 ネットワーキング</button>
+  <button class="filter-btn" onclick="filterSpeakers('media', this)">📺 メディア</button>
+  <button class="filter-btn" style="border-color:#ff4444;color:#ff4444;" onclick="filterSpeakers('high', this)">🔴 必須のみ</button>
+  <button class="filter-btn" style="border-color:#ffaa00;color:#ffaa00;" onclick="filterSpeakers('med', this)">🟡 推奨のみ</button>
+  <button class="filter-btn" style="border-color:#44bb44;color:#44bb44;" onclick="filterSpeakers('low', this)">🟢 参考のみ</button>
+</div>
+
+<div class="filters" id="sponsor-filters" style="display:none">
+  <button class="filter-btn active" onclick="filterSponsors('all', this)">全て</button>
+  <button class="filter-btn" onclick="filterSponsors('jpyr', this)">💴 JPYR</button>
+  <button class="filter-btn" onclick="filterSponsors('sto', this)">📈 STO</button>
+  <button class="filter-btn" onclick="filterSponsors('izakaya', this)">🏮 IZAKAYA</button>
+  <button class="filter-btn" onclick="filterSponsors('new', this)">✨ 新規追加</button>
+  <button class="filter-btn" style="border-color:#ff4444;color:#ff4444;" onclick="filterSponsors('high', this)">🔴 必須のみ</button>
+  <button class="filter-btn" style="border-color:#ffaa00;color:#ffaa00;" onclick="filterSponsors('med', this)">🟡 推奨のみ</button>
+  <button class="filter-btn" style="border-color:#44bb44;color:#44bb44;" onclick="filterSponsors('low', this)">🟢 参考のみ</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>🔴 必須（絶対に話す）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>🟡 推奨（できれば話す）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>🟢 参考（余裕があれば）</div>
+  <div class="legend-item" style="margin-left:auto;color:var(--accent);font-size:11px;">TEAMZ WEB3/AI SUMMIT 2026</div>
+</div>
+
+<div class="content">
+<div id="section-speakers" class="section active">
+  <div class="stats" id="sp-stats"></div>
+  <div class="speakers-grid" id="speakers-grid"></div>
+</div>
+<div id="section-sponsors" class="section">
+  <div class="stats" id="so-stats"></div>
+  <div id="sponsors-content"></div>
+</div>
+</div>
+
+<script>
+const COLORS = ['#c06800','#006080','#006030','#600060','#004080','#700030'];
+function getColor(name) { let h=0; for(let c of name) h=(h*31+c.charCodeAt(0))%6; return COLORS[h]; }
+
+const speakers = [
+  // ★★★ HIGH PRIORITY — 取引所・決済・インフラ系（JPYR上場・STO・IZAKAYA連携の直接候補）
+  {jp:'ジャスティン・サン', en:'Justin Sun', company:'TRON', role:'創設者', cat:'ブロックチェーン', desc:'TRON創設者・HTXアドバイザー。TRONは世界最大のステーブルコイン流通ネットワーク。JPYR上場先・TRC-20展開の最重要コンタクト。', priority:'high', pitch:['jpyr','izakaya'], isNew:false},
+  {jp:'チャールズ・ホスキンソン', en:'Charles Hoskinson', company:'Input Output', role:'CEO兼創業者', cat:'ブロックチェーン', desc:'Cardano創設者・Ethereum共同創業者。Cardano Foundationはスポンサー。JPYR Cardanoチェーン展開・IZAKAYA統合の最重要候補。', priority:'high', pitch:['jpyr','izakaya'], isNew:false},
+  {jp:'ヤット・シウ', en:'Yat Siu', company:'Animoca Brands', role:'共同創業者兼会長', cat:'投資・ゲーム', desc:'Web3ゲーム・メタバース投資の世界的リーダー。The Sandboxの親会社。STOトークンの投資家候補・IZAKAYAウォレットのゲーム連携。', priority:'high', pitch:['sto','izakaya'], isNew:false},
+  {jp:'加納裕三', en:'Yuzo Kano', company:'bitFlyer Holdings', role:'CEO', cat:'取引所', desc:'日本最大級の暗号資産取引所bitFlyerのCEO。🇯🇵日本語OK。JPYR上場の最優先国内候補。日本市場でのSTOトークン流通パートナー。', priority:'high', pitch:['jpyr','sto'], isNew:false},
+  {jp:'渡辺創太', en:'Sota Watanabe', company:'Astar Network', role:'創設者', cat:'ブロックチェーン', desc:'日本発パブリックブロックチェーンAstarの創設者。Polkadotエコシステムの中核。🇯🇵日本語OK。JPYR Astarチェーン展開・IZAKAYA連携候補。', priority:'high', pitch:['jpyr','izakaya'], isNew:false},
+  {jp:'國光宏尚', en:'Hironao Kunimitsu', company:'フィナンシェ', role:'CEO', cat:'トークン・Web3', desc:'gumiの元CEOから日本Web3のリーダーに転身。FiNANCiEでトークン発行プラットフォーム運営。🇯🇵日本語OK。STOトークンの構造設計・日本市場パートナー。', priority:'high', pitch:['sto'], isNew:false},
+  {jp:'小田玄紀', en:'Genki Oda', company:'JCBA', role:'会長', cat:'業界団体', desc:'日本暗号資産ビジネス協会(JCBA)会長。日本のクリプト規制・業界ルールの中心人物。🇯🇵日本語OK。JPYR・STOトークンの規制対応において最重要コンタクト。', priority:'high', pitch:['jpyr','sto'], isNew:false},
+  {jp:'ティム・ドレーパー', en:'Tim Draper', company:'Draper Associates', role:'創設者', cat:'VC・投資家', desc:'シリコンバレー伝説のVC。Skype, Tesla, Bitcoin初期投資家。Draper Associatesはスポンサー。STOトークンの初期投資家・権威付けとして最重要。', priority:'high', pitch:['sto'], isNew:false},
+  {jp:'スティーブ・ユン', en:'Steve Yun', company:'TON Foundation', role:'President', cat:'ブロックチェーン', desc:'Telegram連携ブロックチェーンTONのPresident。9億人のTelegramユーザーベース。JPYR TONチェーン展開・IZAKAYAウォレット連携の超有力候補。', priority:'high', pitch:['jpyr','izakaya'], isNew:false},
+  {jp:'ジョン・ハイマン', en:'John Hyman', company:'Telegram', role:'Chief Investment Officer', cat:'テック・投資', desc:'TelegramのCIO。TONエコシステムへの投資戦略を統括。STOトークンの投資家候補・Telegram上でのJPYR決済統合。', priority:'high', pitch:['sto','jpyr'], isNew:false},
+
+  // ★★ MED PRIORITY — 政治家・インフルエンサー・関連企業
+  {jp:'片山さつき', en:'Satsuki Katayama', company:'自由民主党', role:'財務大臣・金融担当大臣', cat:'政治家', desc:'現職財務大臣。日本の金融規制・暗号資産政策の最高意思決定者。名刺交換・挨拶で関係構築。直接営業は不適切。', priority:'med', pitch:['net'], isNew:false},
+  {jp:'玉木雄一郎', en:'Yuichiro Tamaki', company:'国民民主党', role:'代表', cat:'政治家', desc:'国民民主党代表。暗号資産・Web3推進派として知られる。日本のクリプト税制改革を主導。名刺交換・関係構築。', priority:'med', pitch:['net'], isNew:false},
+  {jp:'川崎ひでと', en:'Hideto Kawasaki', company:'自由民主党', role:'デジタル大臣政務官', cat:'政治家', desc:'デジタル庁政務官。Web3政策・デジタル化推進の実務責任者。STOトークンの規制環境について情報収集。', priority:'med', pitch:['net','sto'], isNew:false},
+  {jp:'塩崎あきひさ', en:'Akihisa Shiosaki', company:'自由民主党', role:'国会対策副委員長', cat:'政治家', desc:'Web3関連法案の国会審議に影響力。暗号資産税制改革の議論に参加。ネットワーキング。', priority:'med', pitch:['net'], isNew:false},
+  {jp:'平井卓也', en:'Takuya Hirai', company:'自由民主党', role:'デジタル社会推進本部長', cat:'政治家', desc:'元デジタル大臣。デジタル社会推進本部でWeb3・AI政策を主導。ネットワーキング。', priority:'med', pitch:['net'], isNew:false},
+  {jp:'平将明', en:'Masaaki Taira', company:'衆議院', role:'衆議院議員', cat:'政治家', desc:'自民党Web3プロジェクトチームの中心メンバー。暗号資産・NFT政策に深い関与。ネットワーキング。', priority:'med', pitch:['net'], isNew:false},
+  {jp:'ロジャー・バー', en:'Roger Ver', company:'Bitcoin.com', role:'ビットコイン投資家', cat:'投資家', desc:'「Bitcoin Jesus」の異名を持つBitcoin初期投資家。Bitcoin.com創設者。暗号資産業界での影響力大。ネットワーキング・メディア露出。', priority:'med', pitch:['net','media'], isNew:false},
+  {jp:'アンソニー・ポンプリアーノ', en:'Anthony Pompliano', company:'Professional Capital Management', role:'創業者兼CEO', cat:'投資家・メディア', desc:'「Pomp」の愛称で知られるBitcoin投資家・ポッドキャスター。フォロワー数百万人。メディア露出・STOトークンの認知拡大に有効。', priority:'med', pitch:['sto','media'], isNew:false},
+  {jp:'堀江貴文', en:'Takafumi Horie', company:'SNS Media & Consulting', role:'実業家', cat:'インフルエンサー', desc:'ホリエモン。日本最大級のビジネスインフルエンサー。🇯🇵日本語OK。JPYR・STOトークンの日本でのメディア露出・認知拡大に最も効果的な人物の一人。', priority:'med', pitch:['media','jpyr'], isNew:false},
+  {jp:'三崎優太', en:'Yuta Misaki', company:'—', role:'実業家/起業家', cat:'インフルエンサー', desc:'青汁王子。SNSフォロワー数百万人の起業家。🇯🇵日本語OK。JPYR・クリプトの日本マス向け認知拡大に有効。', priority:'med', pitch:['media'], isNew:false},
+  {jp:'成田悠輔', en:'Yusuke Narita', company:'—', role:'経済学者', cat:'学術・メディア', desc:'イェール大学助教授。日本で最も影響力のある若手経済学者。🇯🇵日本語OK。STOトークンのアカデミック・権威付けに有効。', priority:'med', pitch:['sto','media'], isNew:false},
+  {jp:'落合陽一', en:'Youichi Ochiai', company:'null²', role:'メディアアーティスト', cat:'テック・アート', desc:'筑波大学教授・メディアアーティスト。日本のAI・テクノロジー言論の中心人物。🇯🇵日本語OK。R Inc.のAI×Web3ビジョンの共鳴相手。', priority:'med', pitch:['net','media'], isNew:false},
+  {jp:'橋下徹', en:'Toru Hashimoto', company:'—', role:'元大阪府知事', cat:'政治家・コメンテーター', desc:'元大阪府知事・弁護士。メディア影響力が極めて大きい。🇯🇵日本語OK。ネットワーキング・メディア露出。', priority:'med', pitch:['net','media'], isNew:false},
+  {jp:'トーン・ヴェイズ', en:'Tone Vays', company:'—', role:'アナリスト・デリバティブトレーダー', cat:'トレーダー・メディア', desc:'元JPMorgan VP。Bitcoin分析・デリバティブ取引の専門家。YouTube・ポッドキャストで影響力。メディア露出候補。', priority:'med', pitch:['media'], isNew:false},
+  {jp:'アレックス・タプスコット', en:'Alex Tapscott', company:'—', role:'著者', cat:'著者・思想家', desc:'『ブロックチェーン・レボリューション』共著者。Web3・トークンエコノミーの思想的リーダー。STOトークンの理論的裏付け。', priority:'med', pitch:['sto'], isNew:false},
+  {jp:'VERBAL', en:'VERBAL', company:'AMBUSH®', role:'アーティスト', cat:'アート・ファッション', desc:'m-floメンバー・AMBUSH®デザイナー。ファッション×Web3の先駆者。🇯🇵日本語OK。ブランドコラボ・メディア露出。', priority:'med', pitch:['media'], isNew:false},
+
+  // ★ LOW PRIORITY — ネットワーキング・情報収集
+  {jp:'—', en:'Ripple Representative', company:'Ripple', role:'XRP TOKYO 2026登壇者', cat:'ブロックチェーン', desc:'XRP TOKYO 2026（4/7同日開催）の登壇者。RippleはTitleスポンサー。JPYR XRPLedger展開の文脈で情報収集。', priority:'low', pitch:['jpyr'], isNew:true},
+  {jp:'—', en:'Circle Representative', company:'Circle', role:'—', cat:'ステーブルコイン', desc:'USDC発行元。グローバルステーブルコイン市場の主要プレーヤー。JPYR × USDCの連携・ペア取引の可能性。', priority:'low', pitch:['jpyr'], isNew:true},
+  {jp:'—', en:'Polkadot Representative', company:'Polkadot', role:'—', cat:'ブロックチェーン', desc:'マルチチェーンエコシステム。Astar Networkの母体。JPYR Polkadot展開・IZAKAYAウォレットのパラチェーン統合。', priority:'low', pitch:['jpyr','izakaya'], isNew:true},
+  {jp:'—', en:'Aptos Representative', company:'Aptos', role:'—', cat:'ブロックチェーン', desc:'Meta（Diem）出身チームによるL1ブロックチェーン。高速・低コスト。JPYR Aptosチェーン展開の候補。', priority:'low', pitch:['jpyr'], isNew:true},
+  {jp:'—', en:'Deloitte Representative', company:'Deloitte', role:'—', cat:'コンサルティング', desc:'Big4。デジタル資産・ブロックチェーンコンサルティング10年超の実績。STO規制対応コンサル。', priority:'low', pitch:['sto'], isNew:true},
+  {jp:'—', en:'Nomura Representative', company:'野村證券', role:'—', cat:'証券', desc:'日本最大の証券会社。STOトークンの証券会社パートナー候補として最重要。🇯🇵日本語OK。', priority:'low', pitch:['sto'], isNew:true},
+  {jp:'—', en:'SBI VC Trade Representative', company:'SBI VC Trade', role:'—', cat:'取引所', desc:'SBIグループの暗号資産取引所。🇯🇵日本語OK。JPYR国内上場候補。SBI証券とのSTO連携の可能性。', priority:'low', pitch:['jpyr','sto'], isNew:true},
+  {jp:'—', en:'Startale Representative', company:'Startale', role:'—', cat:'インフラ', desc:'渡辺創太率いるWeb3インフラ企業。Astar関連。技術連携・IZAKAYA統合の文脈。', priority:'low', pitch:['izakaya'], isNew:true},
+  {jp:'—', en:'Binance Representative', company:'Binance', role:'—', cat:'取引所', desc:'世界最大の暗号資産取引所。JPYR上場の超大型候補。会場で担当者を特定しアプローチ。', priority:'low', pitch:['jpyr'], isNew:true},
+  {jp:'—', en:'Tangem Representative', company:'Tangem', role:'—', cat:'ウォレット', desc:'カード型ハードウェアウォレット。IZAKAYAウォレットとのハードウェア連携候補。', priority:'low', pitch:['izakaya'], isNew:true},
+];
+
+const sponsors = {
+  title: [
+    {name:'Ripple', url:'https://ripple.com', cat:'ブロックチェーン・決済', desc:'XRP・XRPL開発。XRP TOKYO 2026を同日開催。JPYR XRPLedger展開の有力候補。', pitch:['jpyr'], isNew:false},
+    {name:'TRON', url:'https://tron.network', cat:'ブロックチェーン', desc:'Justin Sun創設。USDT最大流通チェーン。JPYR TRC-20展開の最重要候補。', pitch:['jpyr','izakaya'], isNew:false},
+    {name:'Cardano Foundation', url:'https://cardanofoundation.org', cat:'ブロックチェーン', desc:'Charles Hoskinson創設のCardanoエコシステム。JPYR Cardano展開候補。', pitch:['jpyr','izakaya'], isNew:false},
+    {name:'Telegram', url:'https://telegram.org', cat:'テック・メッセージング', desc:'9億人ユーザー。TONエコシステムの母体。JPYR Telegram決済統合の可能性。', pitch:['jpyr'], isNew:false},
+    {name:'TON', url:'https://ton.org', cat:'ブロックチェーン', desc:'Telegram連携L1。Steve Yun率いる。JPYR TONチェーン展開・IZAKAYAウォレット統合。', pitch:['jpyr','izakaya'], isNew:false},
+  ],
+  diamond: [
+    {name:'Circle', url:'https://circle.com', cat:'ステーブルコイン', desc:'USDC発行元。グローバルステーブルコイン規制の先駆者。JPYR × USDC連携。', pitch:['jpyr'], isNew:false},
+    {name:'Polkadot', url:'https://polkadot.network', cat:'ブロックチェーン', desc:'マルチチェーンエコシステム。Astarの母体。JPYR・IZAKAYAのパラチェーン統合。', pitch:['jpyr','izakaya'], isNew:false},
+    {name:'Aptos', url:'https://aptoslabs.com', cat:'ブロックチェーン', desc:'Meta Diem出身チームのL1。高TPS・低レイテンシ。JPYR展開候補。', pitch:['jpyr'], isNew:false},
+    {name:'Animoca Brands', url:'https://www.animocabrands.com', cat:'投資・ゲーム', desc:'Yat Siu率いるWeb3ゲーム・メタバース投資。STOトークン投資家候補。', pitch:['sto','izakaya'], isNew:false},
+    {name:'Nomura', url:'https://www.nomura.co.jp', cat:'証券', desc:'日本最大の証券会社。STOトークンの証券会社パートナー最重要候補。', pitch:['sto'], isNew:false},
+  ],
+  platinum: [
+    {name:'Deloitte', url:'https://www.deloitte.com', cat:'コンサルティング', desc:'Big4。デジタル資産コンサル10年超。STO規制対応・コンプライアンス設計。', pitch:['sto'], isNew:false},
+    {name:'WeWork', url:'https://www.wework.com', cat:'コワーキング', desc:'グローバルコワーキング。イベントスペース・ネットワーキング。', pitch:['net'], isNew:false},
+    {name:'TV Asahi', url:'https://www.tv-asahi.co.jp', cat:'メディア', desc:'テレビ朝日。日本のマスメディア。JPYR・STOトークンのメディア露出。', pitch:['media'], isNew:false},
+    {name:'Macnica', url:'https://www.macnica.co.jp', cat:'テック・商社', desc:'半導体・テクノロジー商社。Web3インフラの技術パートナー候補。', pitch:['net'], isNew:false},
+    {name:'Binance', url:'https://www.binance.com', cat:'取引所', desc:'世界最大の暗号資産取引所。JPYR上場の超大型候補。', pitch:['jpyr'], isNew:false},
+    {name:'SBI VC Trade', url:'https://www.sbivc.co.jp', cat:'取引所', desc:'SBIグループの暗号資産取引所。JPYR国内上場・STO連携の有力候補。', pitch:['jpyr','sto'], isNew:false},
+    {name:'Startale', url:'https://startale.org', cat:'インフラ', desc:'渡辺創太率いるWeb3インフラ企業。Astar関連技術連携。', pitch:['izakaya'], isNew:false},
+    {name:'JPYR', url:'https://jpyr.org', cat:'ステーブルコイン', desc:'我々のプロダクト。スポンサーとして参加。会場での認知拡大。', pitch:['jpyr'], isNew:false},
+  ],
+  gold: [
+    {name:'Eole Inc.', url:'#', cat:'Web3', desc:'Web3関連企業。ネットワーキング。', pitch:['net'], isNew:true},
+    {name:'Tangem', url:'https://tangem.com', cat:'ウォレット', desc:'カード型ハードウェアウォレット。IZAKAYAとのハードウェア連携候補。', pitch:['izakaya'], isNew:false},
+    {name:'SecondSwap', url:'https://secondswap.io', cat:'DeFi', desc:'OTC・セカンダリーマーケット。STOトークンの二次流通プラットフォーム候補。', pitch:['sto'], isNew:true},
+    {name:'Netstars', url:'https://netstars.co.jp', cat:'決済', desc:'QR決済インフラ。日本国内での実店舗決済連携。JPYR決済統合候補。', pitch:['jpyr'], isNew:true},
+    {name:'AAC', url:'#', cat:'Web3', desc:'Web3関連企業。ネットワーキング。', pitch:['net'], isNew:true},
+    {name:'Envo', url:'#', cat:'Web3', desc:'Web3関連企業。ネットワーキング。', pitch:['net'], isNew:true},
+    {name:'XRPL Japan', url:'#', cat:'ブロックチェーン', desc:'XRP Ledger日本コミュニティ。JPYR XRPL展開の情報収集・コミュニティ連携。', pitch:['jpyr'], isNew:true},
+    {name:'Even Realities', url:'#', cat:'ハードウェア', desc:'AR/VRデバイス。Web3×ハードウェアの文脈でネットワーキング。', pitch:['net'], isNew:true},
+  ],
+  vc: [
+    {name:'Draper Associates', url:'https://draper.vc', cat:'VC', desc:'Tim Draper創設。Bitcoin・Web3に特化したシリコンバレーVC。STOトークンの最重要VC候補。', pitch:['sto'], isNew:false},
+    {name:'Dragonfly', url:'https://dragonfly.xyz', cat:'VC', desc:'クリプト特化トップティアVC。DeFi・インフラ投資に強み。STOトークン投資候補。', pitch:['sto'], isNew:false},
+    {name:'Blockchain Capital', url:'https://blockchaincapital.com', cat:'VC', desc:'2013年創設のクリプトVC老舗。Coinbase, Kraken等に投資。STOトークン候補。', pitch:['sto'], isNew:false},
+    {name:'DFG', url:'https://dfg.group', cat:'VC', desc:'Digital Finance Group。アジア拠点のクリプトVC。JPYR・STOのアジア展開。', pitch:['sto','jpyr'], isNew:false},
+    {name:'NGC Ventures', url:'https://ngc.fund', cat:'VC', desc:'ブロックチェーン特化VC。DeFi・インフラ投資。STOトークン候補。', pitch:['sto'], isNew:false},
+    {name:'ABCDE Ventures', url:'#', cat:'VC', desc:'Web3特化VC。アジア市場に強み。STOトークン投資候補。', pitch:['sto'], isNew:true},
+    {name:'SevenX Ventures', url:'https://7xvc.com', cat:'VC', desc:'クリプトネイティブVC。DeFi・インフラ投資。STOトークン候補。', pitch:['sto'], isNew:false},
+    {name:'Blockchain Founders Fund', url:'https://blockchainfounders.fund', cat:'VC', desc:'ブロックチェーンスタートアップ特化VC。初期投資。STOトークン候補。', pitch:['sto'], isNew:false},
+    {name:'Soul Ventures', url:'#', cat:'VC', desc:'Web3 VC。ネットワーキング・情報収集。', pitch:['sto'], isNew:true},
+    {name:'GSG Ventures', url:'#', cat:'VC', desc:'Web3 VC。ネットワーキング・情報収集。', pitch:['sto'], isNew:true},
+    {name:'Hyperithm', url:'https://hyperithm.com', cat:'VC・投資', desc:'日韓拠点のクリプト投資会社。SBIグループ出資。JPYR・STOのアジア展開。', pitch:['sto','jpyr'], isNew:false},
+    {name:'Jsquare', url:'https://jsquare.co', cat:'VC', desc:'Web3特化VC。日本・アジアのWeb3投資。STOトークン候補。', pitch:['sto'], isNew:false},
+  ],
+};
+
+// ============================================================
+// RENDER
+// ============================================================
+let fbPriorities = {};
+
+function renderSpeakers() {
+  const grid = document.getElementById('speakers-grid');
+  grid.innerHTML = '';
+  speakers.forEach((s, i) => {
+    const fbKey = 'speaker#' + s.en;
+    const pri = fbPriorities[fbKey] || s.priority;
+    const card = document.createElement('div');
+    card.className = 'speaker-card p-' + pri;
+    card.dataset.pitch = (s.pitch||[]).join(',');
+    card.dataset.pri = pri;
+    card.dataset.defaultPri = s.priority;
+    card.dataset.fbkey = fbKey;
+    card.dataset.idx = i;
+
+    const init = (s.en||s.jp).charAt(0);
+    const col = getColor(s.en||s.jp);
+    let tags = (s.pitch||[]).map(p => {
+      const labels = {jpyr:'💴 JPYR', sto:'📈 STO', izakaya:'🏮 IZAKAYA', net:'🤝 NET', media:'📺 MEDIA'};
+      return '<span class="ptag ptag-'+p+'">'+(labels[p]||p)+'</span>';
+    }).join('');
+
+    card.innerHTML = `
+      ${s.isNew ? '<div class="new-badge">NEW</div>' : ''}
+      <div class="pri-picker">
+        <button class="pri-dot pd-high ${pri==='high'?'active':''}" onclick="setPri('${fbKey}','high',this)"></button>
+        <button class="pri-dot pd-med ${pri==='med'?'active':''}" onclick="setPri('${fbKey}','med',this)"></button>
+        <button class="pri-dot pd-low ${pri==='low'?'active':''}" onclick="setPri('${fbKey}','low',this)"></button>
+      </div>
+      <div class="speaker-top">
+        <div class="speaker-initial" style="background:${col}">${init}</div>
+        <div class="speaker-info">
+          <div class="name-jp">${s.jp}</div>
+          <div class="name-en">${s.en}</div>
+          <div class="speaker-company">${s.company}</div>
+          <div class="speaker-role">${s.role}</div>
+          <span class="speaker-cat">${s.cat}</span>
+        </div>
+      </div>
+      <div class="speaker-desc">${s.desc}</div>
+      <div class="pitch-tags">${tags}</div>
+    `;
+    grid.appendChild(card);
+  });
+  updateSpeakerStats();
+}
+
+function renderSponsors() {
+  const container = document.getElementById('sponsors-content');
+  container.innerHTML = '';
+  const tierMeta = {
+    title: {label:'🏆 Title Sponsor', cls:'tier-title'},
+    diamond: {label:'💎 Diamond Sponsor', cls:'tier-diamond'},
+    platinum: {label:'🥇 Platinum Sponsor', cls:'tier-platinum'},
+    gold: {label:'🥉 Gold Sponsor', cls:'tier-gold'},
+    vc: {label:'🚀 VC Partner', cls:'tier-vc'},
+  };
+  for (const [tier, list] of Object.entries(sponsors)) {
+    if (!list.length) continue;
+    const m = tierMeta[tier];
+    const sec = document.createElement('div');
+    sec.className = 'sponsor-tier-section';
+    sec.innerHTML = `<div class="tier-header"><span class="tier-name ${m.cls}">${m.label}</span><span class="tier-count">${list.length}社</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'sponsor-grid';
+    list.forEach(s => {
+      const fbKey = 'sponsor#' + s.name;
+      const pri = fbPriorities[fbKey] || '';
+      const card = document.createElement('div');
+      card.className = 'sponsor-card' + (s.isNew ? ' s-new' : '') + (pri ? ' up-'+pri : '');
+      card.dataset.pitch = (s.pitch||[]).join(',');
+      card.dataset.pri = pri;
+      card.dataset.fbkey = fbKey;
+      card.dataset.isNew = s.isNew;
+      let tags = (s.pitch||[]).map(p => {
+        const labels = {jpyr:'💴 JPYR', sto:'📈 STO', izakaya:'🏮 IZAKAYA', net:'🤝 NET', media:'📺 MEDIA'};
+        return '<span class="ptag ptag-'+p+'">'+(labels[p]||p)+'</span>';
+      }).join('');
+      card.innerHTML = `
+        <div class="pri-picker">
+          <button class="pri-dot pd-high ${pri==='high'?'active':''}" onclick="setPri('${fbKey}','high',this)"></button>
+          <button class="pri-dot pd-med ${pri==='med'?'active':''}" onclick="setPri('${fbKey}','med',this)"></button>
+          <button class="pri-dot pd-low ${pri==='low'?'active':''}" onclick="setPri('${fbKey}','low',this)"></button>
+        </div>
+        <div class="sponsor-name">${s.url && s.url !== '#' ? '<a href="'+s.url+'" target="_blank">'+s.name+'</a>' : s.name}</div>
+        <div class="sponsor-cat">${s.cat}</div>
+        <div class="sponsor-desc">${s.desc}</div>
+        <div class="sponsor-tags">${tags}</div>
+        ${s.url && s.url !== '#' ? '<div class="social-row"><a class="slink slink-web" href="'+s.url+'" target="_blank">🌐 Web</a></div>' : ''}
+      `;
+      grid.appendChild(card);
+    });
+    sec.appendChild(grid);
+    container.appendChild(sec);
+  });
+  updateSponsorStats();
+}
+
+// ============================================================
+// TAB / FILTER
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  if (tab === 'speakers') {
+    document.querySelectorAll('.tab')[0].classList.add('active');
+    document.getElementById('section-speakers').classList.add('active');
+    document.getElementById('speaker-filters').style.display = '';
+    document.getElementById('sponsor-filters').style.display = 'none';
+  } else {
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('section-sponsors').classList.add('active');
+    document.getElementById('speaker-filters').style.display = 'none';
+    document.getElementById('sponsor-filters').style.display = '';
+  }
+}
+
+function filterSpeakers(f, btn) {
+  document.querySelectorAll('#speaker-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.speaker-card').forEach(c => {
+    if (f === 'all') { c.classList.remove('hidden'); return; }
+    if (['high','med','low'].includes(f)) { c.classList.toggle('hidden', c.dataset.pri !== f); return; }
+    c.classList.toggle('hidden', !c.dataset.pitch.includes(f));
+  });
+  updateSpeakerStats();
+}
+
+function filterSponsors(f, btn) {
+  document.querySelectorAll('#sponsor-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.sponsor-card').forEach(c => {
+    if (f === 'all') { c.classList.remove('hidden'); return; }
+    if (f === 'new') { c.classList.toggle('hidden', c.dataset.isNew !== 'true'); return; }
+    if (['high','med','low'].includes(f)) { c.classList.toggle('hidden', c.dataset.pri !== f); return; }
+    c.classList.toggle('hidden', !c.dataset.pitch.includes(f));
+  });
+  updateSponsorStats();
+}
+
+function updateSpeakerStats() {
+  const all = document.querySelectorAll('.speaker-card');
+  const vis = document.querySelectorAll('.speaker-card:not(.hidden)');
+  document.getElementById('sp-stats').innerHTML = '表示中: <span>'+vis.length+'</span>件 / 全'+all.length+'件';
+  document.getElementById('sp-count').textContent = '('+all.length+')';
+}
+function updateSponsorStats() {
+  const all = document.querySelectorAll('.sponsor-card');
+  const vis = document.querySelectorAll('.sponsor-card:not(.hidden)');
+  document.getElementById('so-stats').innerHTML = '表示中: <span>'+vis.length+'</span>社';
+  document.getElementById('so-count').textContent = '('+all.length+')';
+}
+
+// ============================================================
+// PRIORITY (Firebase)
+// ============================================================
+function setPri(fbKey, level, btn) {
+  const card = btn.closest('.speaker-card, .sponsor-card');
+  const current = card.dataset.pri;
+  const newPri = current === level ? '' : level;
+  card.dataset.pri = newPri;
+  card.className = card.className.replace(/p-(high|med|low)/g, '').replace(/up-(high|med|low)/g, '').trim();
+  if (newPri) card.classList.add(card.classList.contains('sponsor-card') ? 'up-'+newPri : 'p-'+newPri);
+  card.querySelectorAll('.pri-dot').forEach(d => d.classList.remove('active'));
+  if (newPri) btn.classList.add('active');
+  fbPriorities[fbKey] = newPri;
+  if (typeof FBDB !== 'undefined' && PRI_REF) {
+    PRI_REF.child(fbKey.replace(/[.#$/\[\]]/g,'_')).set(newPri || null);
+  }
+}
+
+// ============================================================
+// FIREBASE INIT
+// ============================================================
+let FBDB, PRI_REF;
+try {
+  const firebaseConfig = {
+    authDomain: "FILL_IN.firebaseapp.com",
+    databaseURL: "https://FILL_IN-default-rtdb.firebaseio.com"
+  };
+  firebase.initializeApp(firebaseConfig);
+  FBDB = firebase.database();
+  PRI_REF = FBDB.ref('teamz2026/priorities');
+  FBDB.ref('.info/connected').on('value', snap => {
+    const dot = document.getElementById('sync-dot');
+    const label = document.getElementById('sync-label');
+    if (snap.val()) { dot.style.background='#44bb44'; label.textContent='Synced'; label.style.color='#44bb44'; }
+    else { dot.style.background='#555'; label.textContent='Syncing...'; label.style.color='#555'; }
+  });
+  PRI_REF.on('value', snap => {
+    const data = snap.val() || {};
+    for (const [k, v] of Object.entries(data)) fbPriorities[k] = v;
+    renderSpeakers();
+    renderSponsors();
+  });
+} catch(e) {
+  document.getElementById('sync-label').textContent = 'Local mode';
+  renderSpeakers();
+  renderSponsors();
+}
+
+if (!PRI_REF) { renderSpeakers(); renderSponsors(); }
+</script>
+</body>
+</html>
